@@ -32,6 +32,8 @@ head(dna)
 
 From the output above, we can see that column names are actually variable values. The underlying experimental variable should actually be called **sample**, the action we need is melting or gathering:
 
+![](images/gather.png)
+
 ```{r}
 molten_dna <- gather(data = dna, key = "Sample", value = "Binding", sample1, sample2, sample3)
 head(molten_dna)

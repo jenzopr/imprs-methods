@@ -1,0 +1,44 @@
+---
+title: "A tidy script example"
+author: "Jens Preussner"
+date: "28 Juni 2016"
+output: html_document
+---
+
+```{r, echo=F, message=FALSE}
+if( "dplyr" %in% installed.packages()) {
+  library(dplyr)
+} else { 
+  install.packages("dplyr")
+}
+if( "tidyr" %in% installed.packages()) {
+  library(tidyr)
+} else { 
+  install.packages("tidyr")
+}
+if( "ggplot2" %in% installed.packages()) {
+  library(ggplot2)
+} else { 
+  install.packages("ggplot2")
+}
+```
+
+```{r, eval=TRUE}
+read.table("data/dna-binding.csv",sep = ";", header = T, comment.char = "#", dec = ",") %>%
+  gather(key = "Sample", value = "Binding", sample1, sample2, sample3) -> data
+
+data %>% ggplot(aes(x=Position, y=Binding, color=Sample)) + geom_line()
+```
+
+### What happens with more data?
+
+```{r, eval=TRUE}
+Position <- seq(from=-2000, to=2000, by=10)
+Sample <- rep("sample4", times = 401)
+Binding <- rnorm(401, mean = 3, sd = 0.5)
+
+data %>% bind_rows(data.frame(Position, Sample, Binding)) %>%
+  ggplot(aes(x=Position, y=Binding, color=Sample)) + geom_line()
+```
+
+

@@ -1,0 +1,170 @@
+---
+title: "Loading data in R"
+author: "Jens Preuﬂner"
+date: "June 28, 2016"
+output: html_document
+---
+
+We'll explore ways to load data into R, as well as conveinient ways of data wrangling in R.
+Our tow toy data sets will be a DNA binding assay from three samples, and a mouse running experiment from two conditions.
+
+The DNA binding data comes as a *csv* file; each row holds information for a position on the DNA and the columns represent samples, **sep**arated by a semicolon. The mouse running data comes as *xlsx* file, and you have to export it first in some text-based format.
+
+Other frequently used data formats are:
+
++ tab **sep**arated data: A tab character is used as delimiter.
++ comma **sep**arated
++ white-space **sep**arated
++ semicolon **sep**arated
+
+R features a general routine to read in **delimiter** separated data, whatever the delimiter might be:
+
+```{r, eval=FALSE, echo=TRUE}
+data <- read.table("filename.txt", sep="[DELIM]")
+```
+
+There are four more characteristic properties that will come up when working with data:
+
++ header lines: header lines define the names of the columns in the data. They appear in the first line.
++ comment lines: Might be inserted by preceding programs to keep information about data creation together with the data.
++ row names: E.g. gene names in a expression data table.
++ decimal points: the character used in the file for decimal points.
+
+So, a full call to `read.table` can also include those:
+
+```{r, eval=FALSE, echo=TRUE}
+data <- read.table("filename.txt", sep="[DELIM]", comment.char = "#", header = TRUE, row.names = 1, dec = ".")
+```
+
+Now, lets turn to our DNA binding data set for today. We first have to download the data from the web:
+
+```{r, eval=F}
+download.file("https://github.com/jenzopr/imprs-methods/raw/master/data/dna-binding.csv","data/dna-binding.csv")
+```
+```{r, echo=F, eval=F}
+if(!file.exists("data/portal_data_joined.csv")) {
+  download.file("https://github.com/jenzopr/imprs-methods/raw/master/data/dna-binding.csv","data/dna-binding.csv")
+}
+```
+
+The command above tries to establish a connection to a file **dna-binding.csv** located on our github account and save it as **dna-binding.csv** in a sub folder called **data**.
+
+Now we can use the `read.table` command, as seen above:
+
+```{r, eval=TRUE}
+dna <- read.table("data/dna-binding.csv",sep = ";", header = T, comment.char = "#", dec = ",")
+```
+
+
+Let's check the first six lines of the data set:
+
+```{r}
+head(dna)
+```
+
+We can see the following columns:
+
+Column | Description
+------ | -----------
+Position |	Position on the DNA, where the measurement was taken
+sample1 |	numeric measurement of sample 1
+sample2 |	numeric measurement of sample 2
+sample3 |	numeric measurement of sample 3
+
+The loaded data comes as a variable of type `data.frame`. An important feature of a `data.frame` is that each column is a vector, with the same type of data.
+We can inspect the **str**ucture of a `data.frame` with the function `str()`:
+
+```{r}
+str(dna)
+```
+
+The output also gives us information on how many observations and how many variables are saved in the `data.frame`.
+
+### Challenges
+
+Can you answer the following questions?
+
++ What is the class of the object data?
++ How many rows and how many columns are in this object?
+
+### Mouse running data
+
+Similar to the DNA binding, we want to load the mouse running data. Since the data comes in Excel format, download it manually from https://github.com/jenzopr/imprs-methods/raw/master/data/mouse-running.xlsx.
+
+Then open it in Excel and export it to a text-based format, with a delimiter of your choice.
+
+```{r, eval=F}
+download.file("https://github.com/jenzopr/imprs-methods/raw/master/data/mouse-running.csv","data/mouse-running.csv")
+```
+```{r, echo=F, eval=F}
+if(!file.exists("data/portal_data_joined.csv")) {
+  download.file("https://github.com/jenzopr/imprs-methods/raw/master/data/mouse-running.csv","data/mouse-running.csv")
+}
+```
+
+```{r, eval=TRUE}
+mouse <- read.table("data/mouse-running.csv",sep = ",", header = T)
+```
+
+Lets also check the **str**ucture of this data set:
+
+```{r}
+str(mouse)
+```
+
+As you can see, one of the columns consist of integers, the two other columns mut and wt are of a special class called a `factor`. Before we learn more about the `data.frame` class, we are going to talk about factors. They are very useful but not necessarily intuitive, and therefore require some attention.
+
+### Factors
+
+Factors are used to represent categorical data. Factors can be ordered or unordered and are an important class for statistical analysis and for plotting.
+
+Factors are stored as integers, and have labels associated with these unique integers. While factors look (and often behave) like character vectors, they are actually integers under the hood, and you need to be careful when treating them like strings.
+
+Once created, factors can only contain a pre-defined set values, known as levels. By default, R always sorts levels in alphabetical order. For instance, if you have a factor with 3 levels:
+
+```{r}
+food <- factor(c("low", "high", "medium", "high", "low", "medium", "high"))
+levels(food)
+food <- factor(food, levels=c("low", "medium", "high"))
+levels(food)
+## min(food) ## doesn't work
+food <- factor(food, levels=c("low", "medium", "high"), ordered=TRUE)
+levels(food)
+min(food) ## works!
+```
+
+### Data frames
+
+`data.frame` is the *de facto* data structure for most tabular data and what we use for statistics and plotting.
+
+A data.frame is a collection of vectors of identical lengths. Each vector represents a column, and each vector can be of a different data type (e.g., characters, integers, factors). A data.frame can be created by the functions `read.csv()` or `read.table()`, in other words, when importing spreadsheets from your hard drive (or the web).
+
+### Challenges
+
++ There are a few mistakes in this hand crafted data.frame, can you spot and fix them? Don't hesitate to experiment!
+
+```{r, eval=F}
+author_book <- data.frame(author_first=c("Charles", "Ernst", "Theodosius"),
+                          author_last=c(Darwin, Mayr, Dobzhansky),
+                          year=c(1942, 1970))
+```
+
++ Can you predict the class for each of the columns in the following example?
+
+```{r}
+country_climate <- data.frame(country=c("Canada", "Panama", "South Africa", "Australia"),
+                               climate=c("cold", "hot", "temperate", "hot/temperate"),
+                               temperature=c(10, 30, 18, "15"),
+                               northern_hemisphere=c(TRUE, TRUE, FALSE, "FALSE"),
+                               has_kangaroo=c(FALSE, FALSE, FALSE, 1))
+```
+
+### Solutions
+
++ What is the class of the object dna? `data.frame`
++ How many rows and how many columns are in this object? `r nrow(dna)` rows and `r ncol(dna)` columns.
+
++ There are a few mistakes in this hand crafted data.frame, can you spot and fix them? Don't hesitate to experiment!
+  1. The `author_last` column contains the undefined variables `Darwin`, `Mayr` and `Dobzhansky`.
+  2. The `year`column has a different length than `author_first` and `author_last`
++ Can you predict the class for each of the columns in the following example? All `factor`, except `has_kangaroo`, which will be `numeric`.

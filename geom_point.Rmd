@@ -1,0 +1,155 @@
+---
+title: "Introduction to ggplot2"
+author: "Jens Preußner"
+date: "January 29, 2016"
+output: html_document
+---
+
+We'll explore ggplots point-geom using the **Theoph** data set build into R.
+First, make sure, that all required packages are loaded:
+
+```{r, eval=TRUE}
+library(ggplot2)
+library(dplyr)
+```
+
+If you encounter an error, try to install those packages:
+
+```{r, eval=FALSE}
+install.packages("ggplot2")
+install.packages("dplyr")
+```
+
+ggplot2 is based on the **grammar of graphics**, the idea that every graph is build from a few components: a **data set**, a set of **geoms** and a **coordinate system**.
+Lets load the data we're working with:
+
+```{r, eval=TRUE}
+data(Theoph)
+```
+
+The basic command that you need is
+
+```{r, eval=TRUE}
+p = ggplot(data=Theoph, aes(x=Time, y=conc))
+```
+
+**Explanation**: The function ggplot initializes the *empty* plot. With *data*, we tell ggplot, which dataset to use and we already do a **mapping** from **Time to X** and **conc to Y**.
+
+If we try to *see* p, our plot object, that we just created, an empty plot appears:
+
+```{r, eval=TRUE}
+print(p)
+```
+
+Since we saved the basic plot as object **p**, we can easily extend it by adding geoms:
+
+```{r, eval=TRUE}
+p + geom_point()
+```
+
+If we want to keep the results we achived so far, we simply save it back:
+
+```{r, eval=TRUE}
+p1 = p + geom_point()
+print(p1)
+```
+
+**Hint**: Use the steps *extending* and *saving* to iteratively build up the plot.
+
+Lets first add some color to the points and make them a bit bigger:
+
+```{r, eval=TRUE}
+p + geom_point(color="blue", size=3)
+```
+
+Or lets change the shape of the points:
+
+```{r, eval=TRUE}
+p + geom_point(color="blue", size=3, shape=2)
+```
+
+**Hint**: Here is an overview of all available shapes:
+
+![](http://sape.inf.usi.ch/sites/default/files/ggplot2-shape-identity.png)
+
+Now back to the data. Could we encode the Dose subjected as color? Sure:
+
+```{r, eval=TRUE}
+p + geom_point(aes(color=Dose), size=3)
+```
+
+What did we do here? We added a new **mapping** from **Dose to color**. 
+We could also map **Wt to color**:
+
+```{r, eval=TRUE}
+p + geom_point(aes(color=Wt), size=3)
+```
+
+It seems that heavy subjects show a lower overall concentration than lighter subjects.
+
+Assuming that a concentration below 3 is below the detection limit. It would be nice, to have a horizontal line that marks a concentration of 3.
+
+```{r, eval=TRUE}
+p + geom_point(aes(color=Wt), size=3) + geom_hline(yintercept = 3)
+```
+
+Lets make a new plot of something different:
+
+```{r, eval=TRUE}
+p2 = ggplot(data=Theoph, aes(x=Wt, y=Dose)) + geom_point(size=3)
+p2
+```
+
+Oouups! The Dose is highly dependent on the subjects weight! What does this mean to our data?
+
+Since the axis labels are a bit non-telling, lets change them:
+```{r, eval=TRUE}
+p2 + xlab("Weight in kg") + ylab("Dose in mg/kg")
+```
+
+Now, lets visualize all concentrations for each subject:
+
+```{r, eval=TRUE}
+ggplot(data=Theoph, aes(x=Subject, y=conc)) + geom_point()
+```
+
+But we can't visualize the time course this way!
+A better way to visualize per subject response is **faceting**:
+
+```{r, eval=TRUE}
+p3 = ggplot(data=Theoph, aes(x=Time, y=conc)) + geom_point() + facet_wrap(~Subject, ncol=4)
+```
+
+And lets add some statistics, like a fitted line for each subjects response:
+
+```{r, eval=TRUE}
+p3 + geom_smooth(se=F, color="gray")
+```
+
+**Special**
+
+Suppose that a concentration above 9 has severe effects on the subject. Can we mark all measurements in red, that show a concentration above 9?
+Yes, but we have to modify the data!
+
+```{r, eval=TRUE}
+Theoph2 = Theoph
+Theoph2$critical = ifelse(Theoph$conc > 9, TRUE, FALSE)
+```
+
+Now plot it again, but this time with **critical mapped to color**:
+```{r, eval=TRUE}
+p4 = ggplot(data=Theoph2, aes(x=Time, y=conc)) + geom_point(aes(color=critical)) + facet_wrap(~Subject, ncol=4) + geom_smooth(se=F, color="gray")
+```
+
+If we don't like the colors, we can manually specify them:
+
+```{r, eval=TRUE}
+p4 + scale_color_manual(values=c("black", "red"))
+```
+
+And as a last step, lets remove the labels for critical, since we have to explain it anyway in the figure caption:
+
+```{r, eval=TRUE}
+p4 + scale_color_manual(values=c("black", "red")) + guides(color=FALSE)
+```
+

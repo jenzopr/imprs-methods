@@ -1,0 +1,107 @@
+---
+title: "Tidy data in R"
+author: "Jens Preussner"
+date: "28 Juni 2016"
+output: html_document
+---
+
+## Loading the tidyr package
+
+We'll use a package called **tidyr** for tidying the DNA binding and mouse data.
+
+```{r}
+if( "tidyr" %in% installed.packages()) {
+  library(tidyr)
+} else { 
+  install.packages("tidyr")
+}
+```
+
+## Reshaping the data
+
+Let's have a look at the DNA binding data:
+
+
+```{r, eval=TRUE}
+dna <- read.table("data/dna-binding.csv",sep = ";", header = T, comment.char = "#", dec = ",")
+```
+
+```{r}
+head(dna)
+```
+
+From the output above, we can see that column names are actually variable values. The underlying experimental variable should actually be called **sample**, the action we need is melting or gathering:
+
+```{r}
+molten_dna <- gather(data = dna, key = "Sample", value = "Binding", sample1, sample2, sample3)
+head(molten_dna)
+```
+
+The *gather* function takes a few arguments:
+
++ data: Which data.frame to operate on.
++ key: The name of the new column (experimental variable name).
++ value: The name of the new value column.
++ ...: names of the columns with values that should be gathered.
+
+Lets try with the mouse data set:
+
+```{r, eval=TRUE}
+mouse <- read.table("data/mouse-running.csv",sep = ",", header = T)
+head(mouse)
+```
+
+The first thing we notice is that the column names are also values of the underlying variable **condition**, so we again gather the values across condition:
+
+```{r}
+molten_mouse <- gather(data = mouse, key = "condition", value = "value", mut, wt)
+head(molten_mouse)
+```
+
+When inspecting the tidy-looking result, we might get suspicious about the values in rows four and five. It contains a bar character in the middle, that was used by the initial data creator to separate two values in one column. Furthermore, the rows with value zero seem not to be measured at all. Using zero as a null value is a bad idea, thats why we should correct this first:
+
+```{r}
+non_zeros = which(molten_mouse$value != 0)
+molten_mouse <- molten_mouse[non_zeros,]
+```
+
+Now we can separate the *value* column:
+
+```{r}
+tidy_mouse <- separate(data = molten_mouse, col = value, into = c("wheel","mill"), sep="\\|", remove=T)
+```
+
+The *separate* function takes a few arguments:
+
++ data: Which data.frame to operate on.
++ col: Which column to operate on (without tickmarks).
++ into: A character vector with the new column names.
++ sep: A regular expression of the delimiter.
++ remove: A logical whether or not the original column should be dropped.
+
+## Combining with dplyr
+
+There is another very useful package for data wrangling: dplyr. We can use it to more efficiently come to a tidy mouse running data set.
+
+```{r}
+if( "dplyr" %in% installed.packages()) {
+  library(dplyr)
+} else { 
+  install.packages("dplyr")
+}
+```
+
+The *dplyr* package introduces the pipe function **%>%**. It occurs between a data frame and a function that returns a data frame and enables us to chain together operations:
+
+```{r}
+mouse %>%
+  gather(key = "condition", value = "value", mut, wt) %>%
+  filter(value != 0) %>%
+  separate(col = value, into = c("wheel","mill"), sep="\\|", remove=T) -> tidy_mouse
+```
+
+Note that all *data* arguments are gone now. We don't need them anymore, because the functions are applied to a constant *stream* of data, that flows through the sequence of operations like water in a pipe.
+
+```{r}
+head(tidy_mouse)
+```
